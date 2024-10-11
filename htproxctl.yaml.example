@@ -1,0 +1,13 @@
+defaults:
+  proxy: socks5://localhost
+  port: 5000
+
+environments:
+  dev:
+    port: 1080
+  stg:
+    proxy: http://example.com
+    port: 11096
+  prod:
+    proxy: https://example.com
+    port: 11097
