@@ -23,11 +23,15 @@ type Config struct {
 }
 
 func main() {
-	var envFlag string
+	var (
+		envFlag     string
+		verboseFlag bool
+	)
 	flag.StringVar(&envFlag, "env", "", "Environment to use")
+	flag.BoolVar(&verboseFlag, "verbose", false, "Enable verbose output")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [-env <environment>] [--] <command> [args...]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [-env <environment>] [-verbose] [--] <command> [args...]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
@@ -45,13 +49,13 @@ func main() {
 	}
 
 	if len(args) == 0 {
-		fmt.Println("Error: No command specified")
+		fmt.Fprintln(os.Stderr, "Error: No command specified")
 		os.Exit(1)
 	}
 
 	config, err := loadConfig()
 	if err != nil {
-		fmt.Printf("Error loading config: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -67,7 +71,7 @@ func main() {
 				port = env.Port
 			}
 		} else {
-			fmt.Printf("Environment '%s' not found in config\n", envFlag)
+			fmt.Fprintf(os.Stderr, "Environment '%s' not found in config\n", envFlag)
 			os.Exit(1)
 		}
 	}
@@ -94,12 +98,17 @@ func main() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Printf("htproxctl: Executing with HTTP_PROXY=%s, HTTPS_PROXY=%s\n", proxyURL, proxyURL)
-	fmt.Printf("Command: %s\n", strings.Join(args, " "))
+	// Only output debug information if verbose flag is set
+	if verboseFlag {
+		fmt.Fprintf(os.Stderr, "htproxctl: Executing with HTTP_PROXY=%s, HTTPS_PROXY=%s\n", proxyURL, proxyURL)
+		fmt.Fprintf(os.Stderr, "Command: %s\n", strings.Join(args, " "))
+	}
 
 	err = cmd.Run()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "htproxctl: Error executing command: %v\n", err)
+		if verboseFlag {
+			fmt.Fprintf(os.Stderr, "htproxctl: Error executing command: %v\n", err)
+		}
 		os.Exit(1)
 	}
 }
